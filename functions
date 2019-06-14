@@ -1,0 +1,90 @@
+def time_splitter(elapsed_seconds):
+    logging.debug("time_splitter(" + str(elapsed_seconds) + ")")
+    hours, rem = divmod(elapsed_seconds, 3600)
+    minutes, seconds = divmod(rem, 60)
+    return(int(hours), int(minutes), int(seconds))
+    
+def handle_path(file_name, path):
+    '''
+    Uses global variable to reference IMAGE_LOCATION implicitly within other
+    functions.  Ultimately, this function allows me to use same-named documents
+    from different paths, which are specified in __main__.
+    '''
+    logging.debug("handle_path(" + str(file_name) + "," + str(path) + ")")
+    global IMAGE_LOCATION # pylint: disable=W
+    global OUTPUT_LOCATION # pylint: disable=W
+    global NATIVE_LOCATION # pylint: disable=W
+    if path == 1:
+        full_path = os.path.join(IMAGE_LOCATION, file_name)
+        return full_path
+    elif path == 2:
+        full_path = os.path.join(OUTPUT_LOCATION, file_name)
+        return full_path
+    elif path == 3:
+        full_path = os.path.join(NATIVE_LOCATION, file_name)
+        return full_path
+
+def look_for_center(screenshot, stall_time):
+    '''
+    Runs like [lookFor], but it'll return the x,y center coordinates
+    instead of the full 4-part tuple.
+    '''
+    logging.debug("look_for_center(" + str(screenshot) + "," + str(stall_time) + ")")
+    check_freq = stall_time * 4
+    location = pyautogui.locateCenterOnScreen(screenshot)
+    count = 0
+    while (location is None) and (count < check_freq):
+        location = pyautogui.locateCenterOnScreen(screenshot)
+        count += 1
+        time.sleep(.25)
+    if count >= stall_time:
+        logging.debug("\tlook_for_center:  Couldn't find " + str(screenshot) + ".")
+        return False, False
+    return location
+
+def find_all_objects(white_doc):
+    '''
+    Collects all coordinates where a document is found, on a gray or white
+    background.  Returns a list of every coordinate, and sorts by the y
+    values.  This uses a lambda function, and we'll see if I'm an idiot.
+    '''
+    logging.debug("find_all_objects(" + str(white_doc) + ")")
+    full_path = handle_path(white_doc, 1)
+    white_list = list(pyautogui.locateAllOnScreen(full_path))
+    logging.debug(white_list)
+    return white_list
+    
+def delete_all(pattern):
+    '''
+    This deletes all the files in the image array.
+    '''
+    logging.debug("delete_all(" +str(pattern) + "*.png)")
+    filenames = glob.glob(str(pattern) + "*.png")
+    for images in filenames:
+        os.remove(images)
+    return
+    
+def maximize_current_window():
+    '''
+    This maximizes the currently-active window.
+    '''
+    logging.debug("maximize_current_window()")
+    pyautogui.hotkey("alt")
+    pyautogui.hotkey("space")
+    pyautogui.hotkey("up")
+    pyautogui.hotkey("up")
+    pyautogui.typewrite("\n")
+    return
+    
+def is_it_there(image_ref):
+    '''
+    This looks for the image in question.  If it can be found,
+    returns true, else false.
+    '''
+    logging.debug("is_it_there(" + str(image_ref) + ")")
+    image_path = handle_path(image_ref, 1)
+    logging.debug("is_it_there()")
+    target_x, target_y = look_for_center(image_path, .5)
+    if target_x is False or target_y is False:
+        return False
+    return True
